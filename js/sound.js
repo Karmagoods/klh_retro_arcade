@@ -1,149 +1,109 @@
-// =======================================
-// KLH Retro Arcade
-// Sound Manager
-// =======================================
+import { loadSettings, saveSettings } from "./highscores.js";
 
 export class SoundManager {
-
     constructor() {
-
+        this.ctx = null;
         this.masterVolume = 0.4;
         this.muted = false;
 
-        this.sounds = {
-
-            paddle: this.createSound("/assets/sounds/paddle.wav", 0.35),
-
-            brick: this.createSound("/assets/sounds/brick.wav", 0.20),
-
-            wall: this.createSound("/assets/sounds/wall.wav", 0.15),
-
-            lose: this.createSound("/assets/sounds/lose.wav", 0.50),
-
-            win: this.createSound("/assets/sounds/win.wav", 0.70)
-
-        };
-
+        const settings = loadSettings();
+        this.masterVolume = settings.volume;
+        this.muted = settings.muted;
     }
 
-    // =======================================
-    // Create Audio Object
-    // =======================================
+    unlock() {
+        this.ensureContext();
+        if (this.ctx && this.ctx.state === "suspended") {
+            this.ctx.resume().catch(() => {});
+        }
+    }
 
-    createSound(src, volume) {
+    ensureContext() {
+        if (this.ctx) return;
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        this.ctx = new AudioContextClass();
+    }
 
-    const sound = new Audio(src);
+    persist() {
+        saveSettings({
+            volume: this.masterVolume,
+            muted: this.muted
+        });
+    }
 
-    sound.preload = "auto";
-    sound.baseVolume = volume;
-    sound.volume = volume * this.masterVolume;
+    tone(frequency, duration, type, volume, slideTo) {
+        if (this.muted) return;
+        this.ensureContext();
+        if (!this.ctx) return;
 
-    return sound;
+        const now = this.ctx.currentTime;
+        const oscillator = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
 
-}
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(frequency, now);
+        if (slideTo) {
+            oscillator.frequency.exponentialRampToValueAtTime(slideTo, now + duration);
+        }
 
-    // =======================================
-    // Play Sound
-    // =======================================
+        const peak = Math.max(0, volume * this.masterVolume);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(peak, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+        oscillator.connect(gain);
+        gain.connect(this.ctx.destination);
+        oscillator.start(now);
+        oscillator.stop(now + duration + 0.02);
+    }
 
     play(name) {
+        const recipes = {
+            paddle: () => this.tone(180, 0.08, "square", 0.22),
+            brick: () => this.tone(520, 0.07, "triangle", 0.18, 280),
+            wall: () => this.tone(140, 0.05, "square", 0.12),
+            lose: () => this.tone(280, 0.35, "sawtooth", 0.2, 80),
+            win: () => {
+                this.tone(440, 0.12, "square", 0.16);
+                setTimeout(() => this.tone(660, 0.12, "square", 0.16), 90);
+                setTimeout(() => this.tone(880, 0.18, "square", 0.18), 180);
+            },
+            shoot: () => this.tone(880, 0.08, "square", 0.12, 220),
+            eat: () => this.tone(640, 0.09, "triangle", 0.18, 880),
+            hit: () => this.tone(200, 0.1, "square", 0.16, 90),
+            line: () => {
+                this.tone(523, 0.12, "square", 0.16);
+                setTimeout(() => this.tone(659, 0.16, "square", 0.16), 70);
+            },
+            move: () => this.tone(90, 0.03, "square", 0.08),
+            select: () => this.tone(360, 0.05, "square", 0.1)
+        };
 
-        if (this.muted) return;
-
-        const sound = this.sounds[name];
-
-        if (!sound) return;
-
-        sound.pause();
-        sound.currentTime = 0;
-
-        sound.play().catch(() => {
-            // Ignore autoplay restrictions until audio is unlocked
-        });
-
+        const recipe = recipes[name];
+        if (recipe) recipe();
     }
-
-    // =======================================
-    // Stop One Sound
-    // =======================================
-
-    stop(name) {
-
-        const sound = this.sounds[name];
-
-        if (!sound) return;
-
-        sound.pause();
-        sound.currentTime = 0;
-
-    }
-
-    // =======================================
-    // Stop Everything
-    // =======================================
-
-    stopAll() {
-
-        Object.values(this.sounds).forEach(sound => {
-
-            sound.pause();
-            sound.currentTime = 0;
-
-        });
-
-    }
-
-    // =======================================
-    // Mute
-    // =======================================
 
     mute() {
-
         this.muted = true;
-
+        this.persist();
     }
-
-    // =======================================
-    // Unmute
-    // =======================================
 
     unmute() {
-
         this.muted = false;
-
+        this.persist();
     }
-
-    // =======================================
-    // Toggle Mute
-    // =======================================
 
     toggleMute() {
-
         this.muted = !this.muted;
-
+        this.persist();
         return this.muted;
-
     }
-
-    // =======================================
-    // Master Volume
-    // value = 0.0 - 1.0
-    // =======================================
 
     setMasterVolume(value) {
-
         this.masterVolume = Math.max(0, Math.min(1, value));
-
-        Object.values(this.sounds).forEach(sound => {
-            sound.volume = sound.baseVolume * this.masterVolume;
-        });
-
+        this.persist();
     }
-
 }
-
-// =======================================
-// Singleton
-// =======================================
 
 export const audio = new SoundManager();

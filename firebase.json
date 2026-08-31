@@ -1,0 +1,11 @@
+{
+  "hosting": {
+    "site": "klh-retro-arcade",
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}

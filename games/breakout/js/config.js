@@ -5,10 +5,9 @@ export const PADDLE = {
 };
 
 export const BALL = {
-    RADIUS: 10,
-    INITIAL_DX: 5,
-    INITIAL_DY: -5,
-    PADDLE_BOUNCE_SPEED: 6
+    RADIUS: 9,
+    INITIAL_SPEED: 5,
+    PADDLE_BOUNCE_SPEED: 6.2
 };
 
 export const BRICKS = {
@@ -17,18 +16,13 @@ export const BRICKS = {
     WIDTH: 85,
     HEIGHT: 25,
     PADDING: 10,
-    OFFSET_TOP: 60,
+    OFFSET_TOP: 70,
     OFFSET_LEFT: 25,
-    COLORS: [
-        "#ff3b30",
-        "#ff9500",
-        "#ffcc00",
-        "#34c759",
-        "#00c7ff"
-    ]
+    COLORS: ["#ff3b30", "#ff9500", "#ffcc00", "#34c759", "#00c7ff", "#af52de", "#ff2d55"],
+    POINTS: [50, 40, 30, 20, 10, 10, 10]
 };
 
 export const UI = {
-    FONT: "20px 'Press Start 2P'",
+    FONT: "16px 'Press Start 2P'",
     COLOR: "#00ffee"
 };

@@ -1,44 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KLH Retro Arcade</title>
-
-    <link rel="stylesheet" href="/css/styles.css">
-
-    <!-- Pixel Font -->
+    <link rel="stylesheet" href="../css/styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
-
 <body>
+    <div id="background"></div>
+    <div class="container">
+        <h1>KLH RETRO ARCADE</h1>
 
-<div id="background"></div>
+        <div class="menu" id="mainMenu">
+            <button id="playBtn">▶ PLAY</button>
+            <button id="scoresBtn">🏆 HIGH SCORES</button>
+            <button id="settingsBtn">⚙ SETTINGS</button>
+            <button id="aboutBtn">ℹ ABOUT</button>
+        </div>
 
-<div class="container">
+        <div class="panel hidden" id="gamesPanel">
+            <div class="game-grid" id="gameGrid"></div>
+            <button data-back>◀ BACK</button>
+        </div>
 
-    <h1>KLH RETRO ARCADE</h1>
+        <div class="panel hidden" id="scoresPanel">
+            <div id="scoresList"></div>
+            <button data-back>◀ BACK</button>
+        </div>
 
-    <div class="menu">
+        <div class="panel hidden" id="settingsPanel">
+            <div class="settings-row">
+                <label for="volumeSlider">VOLUME</label>
+                <input type="range" id="volumeSlider" min="0" max="100" value="40">
+            </div>
+            <button id="muteBtn">MUTE: OFF</button>
+            <button data-back>◀ BACK</button>
+        </div>
 
-        <button id="playBtn">▶ PLAY</button>
+        <div class="panel hidden" id="aboutPanel">
+            <p class="about-copy">
+                Five cabinet classics in the browser: Breakout, Pong, Snake, Space Invaders, and Tetris.
+                Arrow keys to move, Space to fire or serve, P to pause.
+            </p>
+            <button data-back>◀ BACK</button>
+        </div>
 
-        <button>🏆 HIGH SCORES</button>
-
-        <button>⚙ SETTINGS</button>
-
-        <button>ℹ ABOUT</button>
-
+        <footer>Version 0.2</footer>
     </div>
-
-    <footer>
-        Version 0.1
-    </footer>
-
-</div>
-
-<script src="/js/menu.js"></script>
-
+    <script type="module" src="../js/menu.js"></script>
 </body>
 </html>

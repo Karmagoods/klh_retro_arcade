@@ -1,131 +1,117 @@
-import { BALL } from "./config.js";
+import { BALL, PADDLE } from "./config.js";
 import { detectBrickCollision } from "./collisions.js";
+import { createGameState, resetServe, serveBall, startLevel } from "./state.js";
+import { recordScore } from "../../../js/highscores.js";
 import { audio } from "../../../js/sound.js";
 
+function movePaddle(canvas, state, input) {
+    const { paddle } = state;
+
+    if (input.mouseX !== null) {
+        paddle.x = input.mouseX - paddle.width / 2;
+    }
+    if (input.rightPressed) paddle.x += paddle.speed;
+    if (input.leftPressed) paddle.x -= paddle.speed;
+
+    paddle.x = Math.max(0, Math.min(canvas.width - paddle.width, paddle.x));
+}
+
 export function update(canvas, state, input) {
+    if (input.menu) {
+        window.location.href = "../index.html";
+        input.menu = false;
+        return;
+    }
+
+    if (input.restart && state.phase === "gameover") {
+        const next = createGameState(canvas);
+        Object.assign(state, next);
+        input.restart = false;
+        return;
+    }
+
+    if (input.pause) {
+        if (state.phase === "playing") state.phase = "paused";
+        else if (state.phase === "paused") state.phase = "playing";
+        input.pause = false;
+    }
+
+    if (state.phase === "levelclear") {
+        if (input.serve) {
+            state.level += 1;
+            if (state.lives < 5) state.lives += 1;
+            startLevel(state, canvas);
+            input.serve = false;
+        }
+        return;
+    }
+
+    if (state.phase === "gameover" || state.phase === "paused") {
+        input.serve = false;
+        return;
+    }
+
+    movePaddle(canvas, state, input);
+
+    if (state.phase === "ready") {
+        state.ball.x = state.paddle.x + state.paddle.width / 2;
+        state.ball.y = state.paddle.y - state.ball.radius - 2;
+        if (input.serve) {
+            serveBall(state, canvas);
+            state.phase = "playing";
+            input.serve = false;
+        }
+        return;
+    }
 
     const { ball, paddle } = state;
-
-    // =============================
-    // Paddle Movement
-    // =============================
-
-    if (input.rightPressed && paddle.x < canvas.width - paddle.width) {
-        paddle.x += paddle.speed;
-    }
-
-    if (input.leftPressed && paddle.x > 0) {
-        paddle.x -= paddle.speed;
-    }
-
-    // =============================
-    // Move Ball
-    // =============================
-
     ball.x += ball.dx;
     ball.y += ball.dy;
 
-    // =============================
-    // Brick Collision
-    // =============================
-
     detectBrickCollision(state);
-
-    // =============================
-    // Paddle Collision
-    // =============================
+    if (state.phase !== "playing") return;
 
     if (
-
+        ball.dy > 0 &&
         ball.y + ball.radius >= paddle.y &&
         ball.y - ball.radius <= paddle.y + paddle.height &&
-        ball.x >= paddle.x &&
-        ball.x <= paddle.x + paddle.width &&
-        ball.dy > 0
-
+        ball.x + ball.radius >= paddle.x &&
+        ball.x - ball.radius <= paddle.x + paddle.width
     ) {
-
-        const hitPoint =
-            (ball.x - (paddle.x + paddle.width / 2)) /
-            (paddle.width / 2);
-
-        // Change angle depending on where the ball hits
+        const hitPoint = (ball.x - (paddle.x + paddle.width / 2)) / (paddle.width / 2);
         ball.dx = hitPoint * BALL.PADDLE_BOUNCE_SPEED;
-        ball.dy = -Math.abs(ball.dy);
-
-        // Tiny speed increase each hit
-        ball.dy *= 1.01;
-        ball.dx *= 1.01;
-
-        // Prevent sticking
+        ball.dy = -Math.abs(ball.dy) * 1.02;
+        ball.dx *= 1.02;
         ball.y = paddle.y - ball.radius;
-
         audio.play("paddle");
-
     }
 
-    // =============================
-    // Left & Right Walls
-    // =============================
-
-    if (
-        ball.x <= ball.radius ||
-        ball.x >= canvas.width - ball.radius
-    ) {
-
-        ball.dx *= -1;
-
+    if (ball.x <= ball.radius) {
+        ball.x = ball.radius;
+        ball.dx = Math.abs(ball.dx);
         audio.play("wall");
-
+    } else if (ball.x >= canvas.width - ball.radius) {
+        ball.x = canvas.width - ball.radius;
+        ball.dx = -Math.abs(ball.dx);
+        audio.play("wall");
     }
-
-    // =============================
-    // Top Wall
-    // =============================
 
     if (ball.y <= ball.radius) {
-
-        ball.dy *= -1;
-
+        ball.y = ball.radius;
+        ball.dy = Math.abs(ball.dy);
         audio.play("wall");
-
     }
-
-    // =============================
-    // Bottom Wall
-    // =============================
 
     if (ball.y > canvas.height + ball.radius) {
-
-        state.lives--;
-
+        state.lives -= 1;
         audio.play("lose");
-
         if (state.lives <= 0) {
-
-            setTimeout(() => {
-
-                alert("GAME OVER");
-                document.location.reload();
-
-            }, 250);
-
+            state.highScore = recordScore("breakout", state.score);
+            state.phase = "gameover";
         } else {
-
-            // Reset Ball
-
-            ball.x = canvas.width / 2;
-            ball.y = canvas.height / 2;
-
-            ball.dx = BALL.INITIAL_DX;
-            ball.dy = BALL.INITIAL_DY;
-
-            // Reset Paddle
-
-            paddle.x = canvas.width / 2 - paddle.width / 2;
-
+            resetServe(state, canvas);
         }
-
     }
 
+    paddle.width = Math.max(70, PADDLE.WIDTH - (state.level - 1) * 8);
 }
