@@ -1,11 +1,46 @@
 const STORAGE_KEY = "klh_retro_arcade_scores";
 
 export const GAMES = [
-    { id: "breakout", title: "BREAKOUT", href: "breakout/index.html" },
-    { id: "pong", title: "PONG", href: "pong/index.html" },
-    { id: "snake", title: "SNAKE", href: "snake/index.html" },
-    { id: "invaders", title: "INVADERS", href: "invaders/index.html" },
-    { id: "tetris", title: "TETRIS", href: "tetris/index.html" }
+    {
+        id: "breakout",
+        title: "BREAKOUT",
+        href: "breakout/index.html",
+        icon: "🧱",
+        accent: "#ff9f1c",
+        blurb: "Smash bricks. Don't drop the ball."
+    },
+    {
+        id: "pong",
+        title: "PONG",
+        href: "pong/index.html",
+        icon: "🏓",
+        accent: "#00ffee",
+        blurb: "Classic paddle duel vs CPU."
+    },
+    {
+        id: "snake",
+        title: "SNAKE",
+        href: "snake/index.html",
+        icon: "🐍",
+        accent: "#39ff14",
+        blurb: "Grow long. Don't bite yourself."
+    },
+    {
+        id: "invaders",
+        title: "INVADERS",
+        href: "invaders/index.html",
+        icon: "👾",
+        accent: "#ff2bd6",
+        blurb: "Defend Earth from the swarm."
+    },
+    {
+        id: "tetris",
+        title: "TETRIS",
+        href: "tetris/index.html",
+        icon: "🟦",
+        accent: "#4d9fff",
+        blurb: "Stack. Clear. Survive the drop."
+    }
 ];
 
 function emptyScores() {

@@ -1,6 +1,7 @@
 import { getBest, recordScore } from "../../js/highscores.js";
 import { drawOverlay } from "../../js/overlay.js";
 import { audio } from "../../js/sound.js";
+import { bindTouchControls } from "../../js/touch.js";
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -69,6 +70,31 @@ document.addEventListener("keyup", (e) => {
     if (e.key === " ") input.fire = false;
 });
 
+bindTouchControls(input);
+
+// Drag ship on canvas + tap to fire/start
+function pointerX(clientX) {
+    const rect = canvas.getBoundingClientRect();
+    return ((clientX - rect.left) / rect.width) * canvas.width;
+}
+canvas.addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1) return;
+    e.preventDefault();
+    audio.unlock();
+    state.player.x = Math.max(10, Math.min(canvas.width - state.player.w - 10, pointerX(e.touches[0].clientX) - state.player.w / 2));
+    if (state.phase === "gameover") input.restart = true;
+    else if (state.phase === "ready") input.start = true;
+    else input.fire = true;
+}, { passive: false });
+canvas.addEventListener("touchmove", (e) => {
+    if (e.touches.length !== 1) return;
+    e.preventDefault();
+    state.player.x = Math.max(10, Math.min(canvas.width - state.player.w - 10, pointerX(e.touches[0].clientX) - state.player.w / 2));
+}, { passive: false });
+canvas.addEventListener("touchend", () => {
+    input.fire = false;
+});
+
 function livingAliens() {
     return state.aliens.filter((alien) => alien.alive);
 }
@@ -91,9 +117,10 @@ function update() {
         window.location.href = "../index.html";
         return;
     }
-    if (input.restart) {
+    if (input.restart || (state.phase === "gameover" && input.start)) {
         state = createState();
         input.restart = false;
+        input.start = false;
         return;
     }
     if (input.pause) {

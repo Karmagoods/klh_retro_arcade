@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Snake</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+    <meta name="theme-color" content="#050816">
+    <title>Snake · KLH Arcade</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
     <link rel="stylesheet" href="../../css/game.css">
 </head>
@@ -11,9 +12,26 @@
     <div class="game-bar">
         <a class="back-link" href="../index.html">◀ ARCADE</a>
         <h2>SNAKE</h2>
-        <span class="hint">ARROWS</span>
+        <span class="hint">ARROWS · SWIPE</span>
     </div>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div class="canvas-wrap">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+    </div>
+    <div class="touch-pad" id="touchPad">
+        <div class="controls-split">
+            <div class="dpad">
+                <button type="button" class="touch-btn up" data-touch="up" aria-label="Up">▲</button>
+                <button type="button" class="touch-btn left" data-touch="left" aria-label="Left">◀</button>
+                <span class="center-spacer"></span>
+                <button type="button" class="touch-btn right" data-touch="right" aria-label="Right">▶</button>
+                <button type="button" class="touch-btn down" data-touch="down" aria-label="Down">▼</button>
+            </div>
+            <div class="side-actions">
+                <button type="button" class="touch-btn fire" data-touch="action" aria-label="Start">START</button>
+                <button type="button" class="touch-btn" data-touch="pause" aria-label="Pause">PAUSE</button>
+            </div>
+        </div>
+    </div>
     <script type="module" src="game.js"></script>
 </body>
 </html>

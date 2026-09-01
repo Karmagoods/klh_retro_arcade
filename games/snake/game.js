@@ -1,6 +1,7 @@
 import { getBest, recordScore } from "../../js/highscores.js";
 import { drawOverlay } from "../../js/overlay.js";
 import { audio } from "../../js/sound.js";
+import { bindTouchControls } from "../../js/touch.js";
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -79,14 +80,43 @@ document.addEventListener("keydown", (e) => {
     audio.unlock();
 });
 
+// Touch D-pad: hold directions map via flags we poll
+input.up = false;
+input.down = false;
+input.left = false;
+input.right = false;
+const touchApi = bindTouchControls(input);
+touchApi.attachSwipe(canvas, (dir) => {
+    const map = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+    if (map[dir]) queueDir(...map[dir]);
+    if (state.phase === "ready") input.start = true;
+    audio.unlock();
+});
+
+const prevHeld = { up: false, down: false, left: false, right: false };
+function pollTouchDirs() {
+    const dirs = [
+        ["up", 0, -1],
+        ["down", 0, 1],
+        ["left", -1, 0],
+        ["right", 1, 0]
+    ];
+    for (const [key, x, y] of dirs) {
+        if (input[key] && !prevHeld[key]) queueDir(x, y);
+        prevHeld[key] = !!input[key];
+    }
+}
+
 function update() {
+    pollTouchDirs();
     if (input.menu) {
         window.location.href = "../index.html";
         return;
     }
-    if (input.restart) {
+    if (input.restart || (state.phase === "gameover" && input.start)) {
         state = createState();
         input.restart = false;
+        input.start = false;
         return;
     }
     if (input.pause) {

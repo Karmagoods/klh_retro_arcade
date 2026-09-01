@@ -1,6 +1,7 @@
 import { getBest, recordScore } from "../../js/highscores.js";
 import { drawOverlay } from "../../js/overlay.js";
 import { audio } from "../../js/sound.js";
+import { bindTouchControls } from "../../js/touch.js";
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -199,14 +200,59 @@ document.addEventListener("keydown", (e) => {
     if (e.key === " ") hardDrop();
 });
 
+input.left = false;
+input.right = false;
+input.up = false;
+input.down = false;
+input.drop = false;
+input.hardDrop = false;
+input.rotate = false;
+bindTouchControls(input);
+
+const holdPrev = { left: false, right: false, up: false, down: false, drop: false };
+let softDropTimer = 0;
+
+function pollTetrisTouch() {
+    if (state.phase === "ready" && input.start) return;
+    if (state.phase !== "playing") {
+        if (state.phase === "gameover" && input.start) {
+            input.restart = true;
+            input.start = false;
+        }
+        return;
+    }
+    if (input.left && !holdPrev.left) tryMove(-1, 0);
+    if (input.right && !holdPrev.right) tryMove(1, 0);
+    if (input.up && !holdPrev.up) tryRotate();
+    if (input.down) {
+        softDropTimer += 1;
+        if (softDropTimer % 4 === 0) {
+            if (tryMove(0, 1)) state.score += 1;
+            else lockPiece();
+        }
+    } else {
+        softDropTimer = 0;
+    }
+    if ((input.drop || input.hardDrop) && !holdPrev.drop) hardDrop();
+    holdPrev.left = !!input.left;
+    holdPrev.right = !!input.right;
+    holdPrev.up = !!input.up;
+    holdPrev.down = !!input.down;
+    holdPrev.drop = !!(input.drop || input.hardDrop);
+    input.drop = false;
+    input.hardDrop = false;
+}
+
 function update() {
+    pollTetrisTouch();
     if (input.menu) {
         window.location.href = "../index.html";
         return;
     }
-    if (input.restart) {
+    if (input.restart || (state.phase === "gameover" && input.start)) {
         state = createState();
         input.restart = false;
+        input.start = false;
         return;
     }
     if (input.pause) {

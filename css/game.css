@@ -2,58 +2,273 @@
     margin:0;
     padding:0;
     box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+}
+
+:root{
+    --neon-cyan:#00ffee;
+    --safe-bottom:env(safe-area-inset-bottom, 0px);
+}
+
+html, body{
+    height:100%;
 }
 
 body{
-    font-family:'Press Start 2P', cursive;
+    font-family:'Press Start 2P', system-ui, sans-serif;
     background:#050816;
     color:white;
-    min-height:100vh;
+    min-height:100%;
+    min-height:100dvh;
     display:flex;
     flex-direction:column;
     align-items:center;
-    justify-content:center;
-    gap:18px;
+    justify-content:flex-start;
+    gap:10px;
+    padding:max(10px, env(safe-area-inset-top)) 10px max(12px, var(--safe-bottom));
+    touch-action:manipulation;
+    overflow-x:hidden;
 }
 
 body::after{
     content:"";
     position:fixed;
     inset:0;
-    background:linear-gradient(rgba(255,255,255,.05) 50%, transparent 50%);
-    background-size:100% 4px;
+    background:linear-gradient(rgba(255,255,255,.04) 50%, transparent 50%);
+    background-size:100% 3px;
     pointer-events:none;
+    z-index:50;
+    opacity:.65;
 }
 
 .game-bar{
-    width:min(800px, 92vw);
+    width:min(800px, 100%);
     display:flex;
     justify-content:space-between;
     align-items:center;
-    gap:16px;
+    gap:10px;
+    flex-shrink:0;
+    padding:4px 2px;
 }
 
 h2{
-    color:#00ffee;
-    text-shadow:0 0 12px #00ffee;
-    font-size:1.1rem;
+    color:var(--neon-cyan);
+    text-shadow:0 0 12px var(--neon-cyan);
+    font-size:clamp(0.65rem, 3vw, 1.05rem);
+    letter-spacing:0.04em;
+    text-align:center;
+    flex:1;
 }
 
 .back-link,
 .hint{
-    font-size:.55rem;
+    font-size:clamp(0.4rem, 1.6vw, 0.55rem);
     color:#9ad;
     text-decoration:none;
+    white-space:nowrap;
+    padding:8px 4px;
+    min-width:64px;
 }
 
-.back-link:hover{
-    color:#00ffee;
+.back-link{
+    text-align:left;
+}
+
+.hint{
+    text-align:right;
+    color:#6a8;
+}
+
+.back-link:hover,
+.back-link:focus-visible{
+    color:var(--neon-cyan);
+    outline:none;
+}
+
+.canvas-wrap{
+    position:relative;
+    width:min(800px, 100%);
+    flex:0 1 auto;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    max-height:min(70dvh, 600px);
 }
 
 canvas{
-    border:4px solid cyan;
+    border:3px solid cyan;
     background:#111;
-    box-shadow:0 0 30px cyan;
-    max-width:92vw;
+    box-shadow:0 0 24px #00ffee66, 0 0 48px #00ffee22;
+    width:100%;
     height:auto;
+    max-height:min(70dvh, 600px);
+    object-fit:contain;
+    display:block;
+    border-radius:2px;
+    touch-action:none;
+}
+
+/* Touch control pad */
+.touch-pad{
+    display:none;
+    width:min(800px, 100%);
+    max-width:420px;
+    margin-top:4px;
+    padding-bottom:4px;
+    flex-shrink:0;
+    user-select:none;
+    -webkit-user-select:none;
+}
+
+@media (hover:none), (max-width:900px){
+    .touch-pad{
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+        align-items:center;
+    }
+    .hint{
+        display:none;
+    }
+}
+
+.touch-row{
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    width:100%;
+}
+
+.touch-btn{
+    font-family:'Press Start 2P', system-ui, sans-serif;
+    flex:1;
+    min-height:52px;
+    max-width:120px;
+    padding:12px 8px;
+    font-size:clamp(0.7rem, 3.5vw, 1rem);
+    background:linear-gradient(180deg, #1a2035 0%, #0c101c 100%);
+    color:#cde;
+    border:2px solid #2a4060;
+    border-radius:8px;
+    cursor:pointer;
+    touch-action:manipulation;
+    transition:background .1s, border-color .1s, transform .1s, box-shadow .1s;
+    box-shadow:inset 0 1px 0 #ffffff15, 0 3px 0 #0006;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.touch-btn:active,
+.touch-btn.active{
+    background:var(--neon-cyan);
+    color:#050816;
+    border-color:var(--neon-cyan);
+    transform:translateY(2px);
+    box-shadow:0 0 18px #00ffee88, inset 0 1px 0 #fff4;
+}
+
+.touch-btn.fire,
+.touch-btn.action{
+    max-width:160px;
+    border-color:#ff2bd688;
+    color:#ffb8ec;
+}
+
+.touch-btn.fire:active,
+.touch-btn.fire.active,
+.touch-btn.action:active,
+.touch-btn.action.active{
+    background:#ff2bd6;
+    border-color:#ff2bd6;
+    color:#050816;
+    box-shadow:0 0 18px #ff2bd688;
+}
+
+.touch-btn.wide{
+    max-width:none;
+    flex:1.4;
+}
+
+/* D-pad layout for directional games */
+.dpad{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    grid-template-rows:repeat(3, 1fr);
+    gap:6px;
+    width:min(200px, 48vw);
+    aspect-ratio:1;
+}
+
+.dpad .touch-btn{
+    max-width:none;
+    min-height:0;
+    aspect-ratio:1;
+    padding:0;
+    font-size:1.1rem;
+}
+
+.dpad .up{ grid-column:2; grid-row:1; }
+.dpad .left{ grid-column:1; grid-row:2; }
+.dpad .right{ grid-column:3; grid-row:2; }
+.dpad .down{ grid-column:2; grid-row:3; }
+.dpad .center-spacer{
+    grid-column:2;
+    grid-row:2;
+    pointer-events:none;
+}
+
+.controls-split{
+    display:flex;
+    width:100%;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:12px;
+    padding:0 4px;
+}
+
+.controls-split .side-actions{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    flex:1;
+    max-width:120px;
+}
+
+.controls-split .side-actions .touch-btn{
+    max-width:none;
+    min-height:48px;
+}
+
+/* Landscape: compact controls beside/below */
+@media (max-height:500px) and (orientation:landscape){
+    body{
+        gap:6px;
+        padding-top:6px;
+        padding-bottom:6px;
+    }
+    .canvas-wrap{
+        max-height:72dvh;
+    }
+    canvas{
+        max-height:72dvh;
+    }
+    .touch-pad{
+        flex-direction:row;
+        justify-content:center;
+        gap:16px;
+        max-width:100%;
+    }
+    .touch-btn{
+        min-height:44px;
+    }
+    .dpad{
+        width:140px;
+    }
+}
+
+@media (min-width:901px) and (hover:hover){
+    body{
+        justify-content:center;
+    }
 }

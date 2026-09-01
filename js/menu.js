@@ -30,7 +30,12 @@ document.getElementById("playBtn").addEventListener("click", () => {
         const link = document.createElement("a");
         link.className = "game-card";
         link.href = game.href;
-        link.textContent = game.title;
+        link.style.setProperty("--card-accent", game.accent);
+        link.innerHTML = `
+            <span class="card-icon" aria-hidden="true">${game.icon}</span>
+            <span class="card-title">${game.title}</span>
+            <span class="card-blurb">${game.blurb}</span>
+        `;
         grid.appendChild(link);
     });
     showPanel("games");
@@ -42,7 +47,8 @@ document.getElementById("scoresBtn").addEventListener("click", () => {
     const scores = loadScores();
     const list = document.getElementById("scoresList");
     list.innerHTML = GAMES.map((game) => {
-        return `<p class="score-row">${game.title}: ${scores[game.id] || 0}</p>`;
+        const val = scores[game.id] || 0;
+        return `<div class="score-row"><span>${game.icon} ${game.title}</span><span class="score-val">${val}</span></div>`;
     }).join("");
     showPanel("scores");
 });
@@ -81,6 +87,9 @@ function syncSettings() {
 volumeSlider.addEventListener("input", () => {
     audio.unlock();
     audio.setMasterVolume(Number(volumeSlider.value) / 100);
+});
+
+volumeSlider.addEventListener("change", () => {
     audio.play("select");
 });
 
@@ -88,5 +97,22 @@ muteBtn.addEventListener("click", () => {
     audio.unlock();
     muteBtn.textContent = audio.toggleMute() ? "MUTE: ON" : "MUTE: OFF";
 });
+
+const installBtn = document.getElementById("installBtn");
+if (installBtn) {
+    const standalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        window.navigator.standalone === true;
+    if (!standalone) {
+        installBtn.classList.remove("hidden");
+        installBtn.addEventListener("click", () => {
+            audio.unlock();
+            audio.play("select");
+            if (typeof window.klhShowInstallPrompt === "function") {
+                window.klhShowInstallPrompt();
+            }
+        });
+    }
+}
 
 syncSettings();

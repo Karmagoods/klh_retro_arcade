@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Breakout</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+    <meta name="theme-color" content="#050816">
+    <title>Breakout · KLH Arcade</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
     <link rel="stylesheet" href="../../css/game.css">
 </head>
@@ -13,7 +14,19 @@
         <h2>BREAKOUT</h2>
         <span class="hint">SPACE SERVE</span>
     </div>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div class="canvas-wrap">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+    </div>
+    <div class="touch-pad" id="touchPad">
+        <div class="touch-row">
+            <button type="button" class="touch-btn" data-touch="left" aria-label="Left">◀</button>
+            <button type="button" class="touch-btn fire wide" data-touch="action" aria-label="Serve">SERVE</button>
+            <button type="button" class="touch-btn" data-touch="right" aria-label="Right">▶</button>
+        </div>
+        <div class="touch-row">
+            <button type="button" class="touch-btn" data-touch="pause" aria-label="Pause">PAUSE</button>
+        </div>
+    </div>
     <script type="module" src="game.js"></script>
 </body>
 </html>
