@@ -40,6 +40,30 @@ export const GAMES = [
         icon: "🟦",
         accent: "#4d9fff",
         blurb: "Stack. Clear. Survive the drop."
+    },
+    {
+        id: "bike",
+        title: "MOTO DASH",
+        href: "bike/index.html",
+        icon: "🏍️",
+        accent: "#ff6b35",
+        blurb: "Weave through traffic. Don't crash."
+    },
+    {
+        id: "car",
+        title: "TURBO RACE",
+        href: "car/index.html",
+        icon: "🏎️",
+        accent: "#ffd700",
+        blurb: "Grab coins. Dodge traffic. Go fast."
+    },
+    {
+        id: "army",
+        title: "COMBAT ZONE",
+        href: "army/index.html",
+        icon: "🪖",
+        accent: "#4caf50",
+        blurb: "Guns, grenades, tanks. Two levels. Survive."
     }
 ];
 

@@ -1,5 +1,5 @@
 /* KLH Retro Arcade — service worker */
-const CACHE_VERSION = "klh-arcade-v0.4";
+const CACHE_VERSION = "klh-arcade-v1.0";
 const PRECACHE = [
   "./",
   "./index.html",
@@ -21,11 +21,15 @@ const PRECACHE = [
   "./games/snake/index.html",
   "./games/invaders/index.html",
   "./games/tetris/index.html",
+  "./games/bike/index.html",
+  "./games/car/index.html",
   "./games/breakout/game.js",
   "./games/pong/game.js",
   "./games/snake/game.js",
   "./games/invaders/game.js",
-  "./games/tetris/game.js"
+  "./games/tetris/game.js",
+  "./games/bike/game.js",
+  "./games/car/game.js"
 ];
 
 self.addEventListener("install", (event) => {
