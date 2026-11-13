@@ -1,3 +1,5 @@
+import { trackScore, trackGameOver } from "./analytics.js";
+
 const STORAGE_KEY = "klh_retro_arcade_scores";
 
 export const GAMES = [
@@ -64,6 +66,22 @@ export const GAMES = [
         icon: "🪖",
         accent: "#4caf50",
         blurb: "Guns, grenades, tanks. Two levels. Survive."
+    },
+    {
+        id: "maze",
+        title: "MAZE MUNCH",
+        href: "maze/index.html",
+        icon: "🟡",
+        accent: "#ffe14d",
+        blurb: "Eat pellets. Dodge ghosts. Power up."
+    },
+    {
+        id: "hopper",
+        title: "HOPPER",
+        href: "hopper/index.html",
+        icon: "🐸",
+        accent: "#39ff14",
+        blurb: "Cross the road. Ride the logs. Get home."
     }
 ];
 
@@ -92,10 +110,13 @@ export function getBest(gameId) {
 export function recordScore(gameId, score) {
     const scores = loadScores();
     const value = Math.max(0, Math.floor(score));
-    if (value > (scores[gameId] || 0)) {
+    const isNewHigh = value > (scores[gameId] || 0);
+    if (isNewHigh) {
         scores[gameId] = value;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
     }
+    trackScore(gameId, value, isNewHigh);
+    trackGameOver(gameId, value, isNewHigh);
     return scores[gameId] || 0;
 }
 

@@ -1,7 +1,7 @@
 {
   "name": "KLH Retro Arcade",
   "short_name": "KLH Arcade",
-  "description": "Five cabinet classics in the browser: Breakout, Pong, Snake, Space Invaders, and Tetris.",
+  "description": "Ten cabinet classics in the browser: Breakout, Pong, Snake, Space Invaders, Tetris, Moto Dash, Turbo Race, Combat Zone, Maze Munch, and Hopper.",
   "start_url": "./games/index.html",
   "scope": "./",
   "display": "standalone",

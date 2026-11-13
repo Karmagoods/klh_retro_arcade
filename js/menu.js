@@ -1,5 +1,6 @@
 import { GAMES, loadScores, loadSettings } from "./highscores.js";
 import { audio } from "./sound.js";
+import { trackMenuNavigation, trackSelectContent, trackSettingChange } from "./analytics.js";
 
 const mainMenu = document.getElementById("mainMenu");
 const panels = {
@@ -14,11 +15,13 @@ function showPanel(name) {
     Object.entries(panels).forEach(([key, panel]) => {
         panel.classList.toggle("hidden", key !== name);
     });
+    trackMenuNavigation(name);
 }
 
 function showMenu() {
     Object.values(panels).forEach((panel) => panel.classList.add("hidden"));
     mainMenu.classList.remove("hidden");
+    trackMenuNavigation("main");
 }
 
 document.getElementById("playBtn").addEventListener("click", () => {
@@ -36,6 +39,9 @@ document.getElementById("playBtn").addEventListener("click", () => {
             <span class="card-title">${game.title}</span>
             <span class="card-blurb">${game.blurb}</span>
         `;
+        link.addEventListener("click", () => {
+            trackSelectContent("game", game.id, game.title);
+        });
         grid.appendChild(link);
     });
     showPanel("games");
@@ -91,11 +97,14 @@ volumeSlider.addEventListener("input", () => {
 
 volumeSlider.addEventListener("change", () => {
     audio.play("select");
+    trackSettingChange("volume", volumeSlider.value);
 });
 
 muteBtn.addEventListener("click", () => {
     audio.unlock();
-    muteBtn.textContent = audio.toggleMute() ? "MUTE: ON" : "MUTE: OFF";
+    const isMuted = audio.toggleMute();
+    muteBtn.textContent = isMuted ? "MUTE: ON" : "MUTE: OFF";
+    trackSettingChange("muted", isMuted);
 });
 
 const installBtn = document.getElementById("installBtn");

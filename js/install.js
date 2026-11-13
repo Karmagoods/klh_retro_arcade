@@ -2,6 +2,8 @@
  * PWA install prompt + service worker registration.
  */
 
+import { trackPwaInstall } from "./analytics.js";
+
 const DISMISS_KEY = "klh_pwa_install_dismissed";
 const DISMISS_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -97,6 +99,7 @@ function createBanner({ title, body, primaryLabel, onPrimary, secondaryLabel = "
     });
     banner.querySelector("[data-pwa-dismiss]").addEventListener("click", () => {
         markDismissed();
+        trackPwaInstall("dismissed");
         hideBanner(banner);
     });
 
@@ -106,6 +109,7 @@ function createBanner({ title, body, primaryLabel, onPrimary, secondaryLabel = "
 function showChromeInstallPrompt() {
     if (!deferredPrompt || isStandalone() || wasDismissedRecently()) return;
 
+    trackPwaInstall("prompt_shown");
     createBanner({
         title: "INSTALL ARCADE",
         body: "Add KLH Retro Arcade to your home screen for fullscreen play.",
@@ -114,7 +118,12 @@ function showChromeInstallPrompt() {
             deferredPrompt.prompt();
             try {
                 const choice = await deferredPrompt.userChoice;
-                if (choice && choice.outcome === "dismissed") markDismissed();
+                if (choice && choice.outcome === "dismissed") {
+                    markDismissed();
+                    trackPwaInstall("prompt_choice", "dismissed");
+                } else if (choice && choice.outcome === "accepted") {
+                    trackPwaInstall("prompt_choice", "accepted");
+                }
             } catch {
                 /* ignore */
             }
@@ -127,6 +136,7 @@ function showIosHint(force = false) {
     if (!isIos() || isStandalone()) return;
     if (!force && wasDismissedRecently()) return;
 
+    trackPwaInstall("ios_hint_shown");
     createBanner({
         title: "ADD TO HOME",
         body: 'Tap <strong>Share</strong> then <strong>Add to Home Screen</strong> for the full arcade experience.',
@@ -134,6 +144,7 @@ function showIosHint(force = false) {
         secondaryLabel: "LATER",
         onPrimary: async () => {
             markDismissed();
+            trackPwaInstall("ios_hint_accepted");
         }
     });
 }
@@ -144,12 +155,14 @@ export function initPwaInstall() {
     window.addEventListener("beforeinstallprompt", (e) => {
         e.preventDefault();
         deferredPrompt = e;
+        trackPwaInstall("prompt_available");
         setTimeout(showChromeInstallPrompt, 1200);
     });
 
     window.addEventListener("appinstalled", () => {
         deferredPrompt = null;
         markDismissed();
+        trackPwaInstall("installed");
         const b = document.getElementById("pwaInstallBanner");
         if (b) hideBanner(b);
     });
