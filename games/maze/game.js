@@ -90,7 +90,8 @@ function makePlayer() {
         dir: "left",
         want: "left",
         moving: false,
-        progress: 0
+        progress: 0,
+        wrapDx: 0
     };
 }
 
@@ -107,6 +108,7 @@ function makeGhosts() {
         corner: setup.corner,
         moving: false,
         progress: 0,
+        wrapDx: 0,
         release: 30 + index * 45,
         eaten: false
     }));
@@ -149,6 +151,9 @@ function createState() {
         frightened: 0,
         combo: 0,
         fruit: null,
+        fruitSpawned: 0,
+        nextExtra: 10000,
+        levelBonus: 0,
         deathTimer: 0,
         levelTimer: 0,
         anim: 0
@@ -206,6 +211,11 @@ touchApi.attachSwipe(canvas, (dir) => {
     audio.unlock();
 });
 
+// Don't let a background tab cost a life.
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden && state.phase === "playing") state.phase = "paused";
+});
+
 const prevHeld = { up: false, down: false, left: false, right: false };
 function pollTouchDirs() {
     let pressed = false;
@@ -224,12 +234,37 @@ function pollTouchDirs() {
 function entityPos(e) {
     const fromX = e.c * TILE + TILE / 2;
     const fromY = e.r * TILE + TILE / 2;
+    const t = Math.min(1, Math.max(0, e.progress));
+
+    // Tunnel wrap: keep travelling past the edge instead of snapping across.
+    if (e.moving && e.wrapDx) {
+        return {
+            x: fromX + e.wrapDx * TILE * t,
+            y: fromY + (e.nextR - e.r) * TILE * t
+        };
+    }
+
     const toX = e.nextC * TILE + TILE / 2;
     const toY = e.nextR * TILE + TILE / 2;
-    // Tunnel wrap: don't stretch the sprite across the whole maze.
-    if (Math.abs(toX - fromX) > TILE * 1.5) return { x: toX, y: toY };
-    const t = Math.min(1, Math.max(0, e.progress));
     return { x: fromX + (toX - fromX) * t, y: fromY + (toY - fromY) * t };
+}
+
+// Draw a sprite twice while it crosses the tunnel so it leaves one side and
+// enters the other instead of popping.
+function entityPositions(e) {
+    const p = entityPos(e);
+    const list = [{ x: p.x, y: p.y }];
+    if (p.x < TILE) list.push({ x: p.x + canvas.width, y: p.y });
+    else if (p.x > canvas.width - TILE) list.push({ x: p.x - canvas.width, y: p.y });
+    return list;
+}
+
+// Shortest horizontal distance, accounting for the tunnel's wrap-around.
+function wrapDelta(a, b) {
+    let d = a - b;
+    if (d > canvas.width / 2) d -= canvas.width;
+    else if (d < -canvas.width / 2) d += canvas.width;
+    return d;
 }
 
 function startMove(e) {
@@ -240,6 +275,7 @@ function startMove(e) {
     if (isWall(nc, nr)) return false;
     e.nextC = nc;
     e.nextR = nr;
+    e.wrapDx = Math.abs(nc - e.c) > 1 ? d.x : 0;
     e.moving = true;
     return true;
 }
@@ -257,6 +293,18 @@ function reverseEntity(e) {
     e.progress = 1 - e.progress;
 }
 
+function addScore(points) {
+    state.score += points;
+    // Extra life every 10,000 points, capped like the arcade original.
+    while (state.score >= state.nextExtra) {
+        state.nextExtra += 10000;
+        if (state.lives < 5) {
+            state.lives += 1;
+            audio.play("ding");
+        }
+    }
+}
+
 function eatAt(c, r) {
     const pellet = state.pellets[r][c];
     if (pellet) {
@@ -264,7 +312,7 @@ function eatAt(c, r) {
         state.pelletsLeft -= 1;
         state.pelletsEaten += 1;
         if (pellet === "o") {
-            state.score += 50;
+            addScore(50);
             state.frightened = FRIGHT_FRAMES;
             state.combo = 0;
             state.ghosts.forEach((ghost) => {
@@ -272,24 +320,28 @@ function eatAt(c, r) {
             });
             audio.play("powerup");
         } else {
-            state.score += 10;
+            addScore(10);
             audio.play("blip");
         }
 
-        if ((state.pelletsEaten === 70 || state.pelletsEaten === 170) && !state.fruit) {
+        const fruitAt = [70, 170][state.fruitSpawned];
+        if (fruitAt !== undefined && state.pelletsEaten >= fruitAt) {
+            state.fruitSpawned += 1;
             state.fruit = { c: 15, r: 11, timer: 10 * 60 };
         }
 
         if (state.pelletsLeft === 0) {
+            state.levelBonus = 500 + (state.level - 1) * 250;
+            addScore(state.levelBonus);
             state.phase = "levelclear";
-            state.levelTimer = 110;
+            state.levelTimer = 130;
             audio.play("win");
             return;
         }
     }
 
     if (state.fruit && state.fruit.c === c && state.fruit.r === r) {
-        state.score += 100 * state.level;
+        addScore(100 * state.level);
         state.fruit = null;
         audio.play("coin");
     }
@@ -437,13 +489,13 @@ function checkCollisions() {
     for (const ghost of state.ghosts) {
         if (ghost.release > 0 || ghost.eaten) continue;
         const gp = entityPos(ghost);
-        if (Math.abs(p.x - gp.x) > TILE * 0.7) continue;
+        if (Math.abs(wrapDelta(p.x, gp.x)) > TILE * 0.7) continue;
         if (Math.abs(p.y - gp.y) > TILE * 0.7) continue;
 
         if (state.frightened > 0) {
             ghost.eaten = true;
             state.combo = Math.min(4, state.combo + 1);
-            state.score += 200 * 2 ** (state.combo - 1);
+            addScore(200 * 2 ** (state.combo - 1));
             audio.play("eat");
         } else {
             startDeath();
@@ -458,6 +510,8 @@ function nextLevel() {
     state.pellets = pellets.grid;
     state.pelletsLeft = pellets.left;
     state.pelletsEaten = 0;
+    state.fruitSpawned = 0;
+    state.fruit = null;
     if (state.pellets[START.r][START.c]) {
         state.pellets[START.r][START.c] = null;
         state.pelletsLeft -= 1;
@@ -623,7 +677,6 @@ function drawPellets() {
 }
 
 function drawPlayer() {
-    const p = entityPos(state.player);
     const base = ANGLE[state.player.dir] || 0;
     const mouth = state.player.moving
         ? 0.08 + Math.abs(Math.sin(state.anim * 0.2)) * 0.34
@@ -633,16 +686,21 @@ function drawPlayer() {
     ctx.shadowColor = "#ffe14d";
     ctx.shadowBlur = 14;
     ctx.fillStyle = "#ffe14d";
-    ctx.beginPath();
-    ctx.moveTo(p.x, p.y);
-    ctx.arc(p.x, p.y, TILE * 0.42, base + mouth, base + Math.PI * 2 - mouth);
-    ctx.closePath();
-    ctx.fill();
+    for (const p of entityPositions(state.player)) {
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.arc(p.x, p.y, TILE * 0.42, base + mouth, base + Math.PI * 2 - mouth);
+        ctx.closePath();
+        ctx.fill();
+    }
     ctx.restore();
 }
 
 function drawGhost(g) {
-    const p = entityPos(g);
+    for (const p of entityPositions(g)) drawGhostAt(g, p);
+}
+
+function drawGhostAt(g, p) {
     const radius = TILE * 0.42;
     const frightened = state.frightened > 0 && !g.eaten;
     const flashing = frightened && state.frightened < 120 && Math.floor(state.anim / 12) % 2 === 0;
@@ -706,15 +764,18 @@ function drawHud() {
     ctx.fillStyle = "#8fd8ff";
     ctx.fillText("SCORE " + String(state.score).padStart(6, "0"), 12, 18);
 
+    ctx.fillStyle = "#4d6ba8";
+    ctx.fillText("BEST " + String(Math.max(state.highScore, state.score)).padStart(6, "0"), 168, 18);
+
     ctx.textAlign = "center";
     ctx.fillStyle = "#5f7bbd";
     ctx.fillText("LEVEL " + state.level, canvas.width / 2, 18);
 
     ctx.textAlign = "right";
     ctx.fillStyle = "#ffe14d";
-    ctx.fillText("LIVES", canvas.width - 66, 18);
+    ctx.fillText("LIVES", canvas.width - 92, 18);
     for (let i = 0; i < state.lives; i++) {
-        const x = canvas.width - 46 + i * 16;
+        const x = canvas.width - 84 + i * 14;
         ctx.beginPath();
         ctx.moveTo(x, 12);
         ctx.arc(x, 12, 6, 0.28, Math.PI * 2 - 0.28);
@@ -742,7 +803,10 @@ function draw() {
     } else if (state.phase === "paused") {
         drawOverlay(ctx, canvas, "PAUSED", ["P TO CONTINUE"]);
     } else if (state.phase === "levelclear") {
-        drawOverlay(ctx, canvas, "LEVEL CLEAR", ["+ BONUS", "GET READY"]);
+        drawOverlay(ctx, canvas, "LEVEL CLEAR", [
+            "BONUS +" + state.levelBonus,
+            "GET READY"
+        ]);
     } else if (state.phase === "gameover") {
         drawOverlay(ctx, canvas, "GAME OVER", [
             "SCORE " + state.score,
@@ -760,10 +824,24 @@ function draw() {
     }
 }
 
-function loop() {
-    update();
+// Fixed 60 Hz simulation so the game plays the same on 60, 120 and 144 Hz displays.
+const STEP_MS = 1000 / 60;
+let lastTime = 0;
+let accumulator = 0;
+
+function loop(now) {
+    if (!lastTime) lastTime = now;
+    let delta = now - lastTime;
+    lastTime = now;
+    // Returning from a hidden tab must not fast-forward the whole game.
+    if (delta > 250) delta = STEP_MS;
+    accumulator = Math.min(accumulator + delta, STEP_MS * 4);
+    while (accumulator >= STEP_MS) {
+        update();
+        accumulator -= STEP_MS;
+    }
     draw();
     requestAnimationFrame(loop);
 }
 
-loop();
+requestAnimationFrame(loop);

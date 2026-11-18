@@ -133,6 +133,10 @@ export class SoundManager {
                 this.tone(100, 0.3, "sawtooth", 0.22, 30);
             },
             jump: () => this.tone(220, 0.12, "square", 0.14, 660),
+            splash: () => {
+                this.noise(0.3, 0.32, 1400);
+                this.tone(320, 0.18, "sine", 0.14, 90);
+            },
             engine: () => {
                 this.tone(80, 0.15, "sawtooth", 0.12, 60);
                 setTimeout(() => this.tone(65, 0.1, "sawtooth", 0.08, 55), 40);

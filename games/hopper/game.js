@@ -99,6 +99,7 @@ function createState() {
         timeLeft: LIFE_FRAMES,
         deathTimer: 0,
         levelTimer: 0,
+        levelBonus: 0,
         anim: 0,
         queue: null
     };
@@ -154,6 +155,11 @@ touchApi.attachSwipe(canvas, (dir) => {
     if (state.phase === "ready") input.start = true;
     hop(dir);
     audio.unlock();
+});
+
+// Don't let a background tab drain the life timer.
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden && state.phase === "playing") state.phase = "paused";
 });
 
 const prevHeld = { up: false, down: false, left: false, right: false };
@@ -212,12 +218,12 @@ function resetFrog() {
     state.queue = null;
 }
 
-function startDeath() {
+function startDeath(sound = "crash") {
     if (state.phase !== "playing") return;
     state.phase = "dying";
     state.deathTimer = 70;
     state.queue = null;
-    audio.play("crash");
+    audio.play(sound);
 }
 
 function laneUnderPlayer(lane) {
@@ -238,13 +244,15 @@ function tryHome() {
     }
 
     state.homes[slot] = true;
-    state.score += 50;
+    // Reward a fast crossing: every remaining second is worth 10 points.
+    state.score += 50 + Math.floor(state.timeLeft / 60) * 10;
     audio.play("coin");
 
     if (state.homes.every(Boolean)) {
         state.phase = "levelclear";
         state.levelTimer = 130;
-        state.score += 1000;
+        state.levelBonus = 1000 + (state.level - 1) * 250;
+        state.score += state.levelBonus;
         audio.play("win");
         return;
     }
@@ -269,7 +277,7 @@ function land() {
     if (p.row >= 2 && p.row <= 6) {
         const lane = state.lanes.river.find((item) => item.row === p.row);
         if (!lane || !laneUnderPlayer(lane)) {
-            startDeath();
+            startDeath("splash");
         }
     }
 }
@@ -307,7 +315,7 @@ function checkCollisions() {
         }
         p.x += lane.dir * lane.speed;
         if (p.x < 4 || p.x > canvas.width - 4) {
-            startDeath();
+            startDeath("splash");
             return;
         }
     }
@@ -362,7 +370,6 @@ function update() {
                 state.phase = "gameover";
                 audio.play("lose");
             } else {
-                state.lanes = createLanes(state.level);
                 resetFrog();
                 state.phase = "playing";
             }
@@ -649,7 +656,8 @@ function drawHud() {
 
     ctx.textAlign = "right";
     ctx.fillStyle = "#39ff14";
-    ctx.fillText("LIVES " + state.lives, canvas.width - 12, 18);
+    const filled = state.homes.filter(Boolean).length;
+    ctx.fillText("LIVES " + state.lives + "   PADS " + filled + "/5", canvas.width - 12, 18);
     ctx.textAlign = "left";
 
     drawTimer();
@@ -678,7 +686,10 @@ function draw() {
     } else if (state.phase === "paused") {
         drawOverlay(ctx, canvas, "PAUSED", ["P TO CONTINUE"]);
     } else if (state.phase === "levelclear") {
-        drawOverlay(ctx, canvas, "LEVEL CLEAR", ["+1000 BONUS", "GET READY"]);
+        drawOverlay(ctx, canvas, "LEVEL CLEAR", [
+            "BONUS +" + state.levelBonus,
+            "GET READY"
+        ]);
     } else if (state.phase === "gameover") {
         drawOverlay(ctx, canvas, "GAME OVER", [
             "SCORE " + state.score,
@@ -688,10 +699,24 @@ function draw() {
     }
 }
 
-function loop() {
-    update();
+// Fixed 60 Hz simulation so the game plays the same on 60, 120 and 144 Hz displays.
+const STEP_MS = 1000 / 60;
+let lastTime = 0;
+let accumulator = 0;
+
+function loop(now) {
+    if (!lastTime) lastTime = now;
+    let delta = now - lastTime;
+    lastTime = now;
+    // Returning from a hidden tab must not fast-forward the whole game.
+    if (delta > 250) delta = STEP_MS;
+    accumulator = Math.min(accumulator + delta, STEP_MS * 4);
+    while (accumulator >= STEP_MS) {
+        update();
+        accumulator -= STEP_MS;
+    }
     draw();
     requestAnimationFrame(loop);
 }
 
-loop();
+requestAnimationFrame(loop);
