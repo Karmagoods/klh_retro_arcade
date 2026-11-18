@@ -1,5 +1,5 @@
 /* KLH Retro Arcade — service worker */
-const CACHE_VERSION = "klh-arcade-v1.3";
+const CACHE_VERSION = "klh-arcade-v1.4";
 const PRECACHE = [
   "./",
   "./index.html",
@@ -10,6 +10,7 @@ const PRECACHE = [
   "./js/menu.js",
   "./js/highscores.js",
   "./js/analytics.js",
+  "./js/firebase-config.js",
   "./js/sound.js",
   "./js/overlay.js",
   "./js/touch.js",

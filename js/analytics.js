@@ -4,15 +4,8 @@
  * GA4 Measurement ID: G-49TQG0YC60
  */
 
-export const firebaseConfig = {
-    projectId: "klhinnovation-6eac7",
-    appId: "1:287335912967:web:07b093612918d516023ca2",
-    storageBucket: "klhinnovation-6eac7.firebasestorage.app",
-    apiKey: "AIzaSyBWL3XejMeJSsi7JR60dQAVNP4KzoMJJgk",
-    authDomain: "klhinnovation-6eac7.firebaseapp.com",
-    messagingSenderId: "287335912967",
-    measurementId: "G-49TQG0YC60"
-};
+import { firebaseConfig } from "./firebase-config.js";
+export { firebaseConfig };
 
 const GAME_NAMES = {
     breakout: "Breakout",
@@ -36,6 +29,13 @@ export async function getAnalyticsInstance() {
 
     analyticsPromise = (async () => {
         if (typeof window === "undefined") return null;
+
+        // Guard: Verify that a valid API key is available before attempting initialization
+        const apiKey = firebaseConfig.apiKey;
+        if (!apiKey || apiKey.startsWith("__") || apiKey === "YOUR_FIREBASE_API_KEY" || apiKey === "undefined") {
+            console.info("[Analytics] Firebase API key not configured or using placeholder. Analytics disabled.");
+            return null;
+        }
 
         try {
             const [appMod, analyticsMod] = await Promise.all([

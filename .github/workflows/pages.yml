@@ -19,6 +19,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      - name: Inject Firebase API Key from Secrets
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+        run: |
+          if [ -n "$FIREBASE_API_KEY" ]; then
+            sed -i "s/__FIREBASE_API_KEY__/$FIREBASE_API_KEY/g" js/firebase-config.js
+            echo "Successfully injected FIREBASE_API_KEY into js/firebase-config.js"
+          else
+            echo "FIREBASE_API_KEY secret not found; proceeding with default placeholder."
+          fi
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
